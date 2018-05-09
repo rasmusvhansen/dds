@@ -11,5 +11,8 @@
     "googleapis": "^26.0.1",
     "lodash": "^4.17.5",
     "odoo-xmlrpc": "^1.0.6"
+  },
+  "scripts": {
+    "start": "node index.js"
   }
 }
