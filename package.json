@@ -1,0 +1,15 @@
+{
+  "name": "dds",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/rasmusvhansen/dds",
+  "author": "<rasmusvhansen@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^5.0.1",
+    "google-auth-library": "^0.12.0",
+    "googleapis": "^26.0.1",
+    "lodash": "^4.17.5",
+    "odoo-xmlrpc": "^1.0.6"
+  }
+}
