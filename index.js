@@ -15,12 +15,13 @@ const groupMap = [
 
 async function main() {
   for (const [odooId, groupId] of groupMap) {
+    // cannot run in parallel, since the api does not support concurrent usage...
     await syncGroup(odooId, groupId + "@valhallagruppe.dk");
   }
 }
 
 main()
-  .then(console.log)
+  .then(() => console.log("Synchronized successfully"))
   .catch(console.error)
 
 function syncGroup(odooId, groupId) {
@@ -32,17 +33,8 @@ function syncGroup(odooId, groupId) {
   ).then(([googleMembers, odooMembers]) => {
     const toCreate = difference(odooMembers, googleMembers);
     const toDelete = difference(googleMembers, odooMembers);
-    if (toCreate.length) {
-      return addMembers(groupId, toCreate).then(() => {
-        if (toDelete.length) {
-          return deleteMembers(groupId, toDelete);
-        }
-      });
-    } else {
-      if (toDelete.length) {
-        return deleteMembers(groupId, toDelete);
-      }
-    }
+    const toCreatePromise = toCreate.length ? addMembers(groupId, toCreate) : Promise.resolve();
+    return toCreatePromise.then(() => toDelete.length ? deleteMembers(groupId, toDelete) : Promise.resolve);
   })
     .catch(r => console.log(r));
 }

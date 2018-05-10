@@ -1,5 +1,3 @@
-// https://www.googleapis.com/auth/admin.directory.group, https://www.googleapis.com/auth/admin.directory.group.member, https://www.googleapis.com/auth/admin.directory.orgunit, https://www.googleapis.com/auth/admin.directory.user
-
 var { google } = require("googleapis");
 
 var jwtClient = new google.auth.JWT(
@@ -32,7 +30,7 @@ function getMembers(groupId) {
 }
 
 function addMembers(groupId, emails) {
-  console.log(`adding ${emails.join("\n")}`);
+  console.log(`adding \n${emails.join("\n")}`);
   return makeRequests((service) => {
     return Promise.all(emails.map((email, i) => {
       return delay(() => promisify(service.members.insert)({
@@ -49,7 +47,7 @@ function addMembers(groupId, emails) {
 }
 
 function deleteMembers(groupId, emails) {
-  console.log(`deleting ${emails.join("\n")}`);
+  console.log(`deleting \n${emails.join("\n")}`);
   return makeRequests((service) => {
     return Promise.all(emails.map((email, i) => {
       return delay(() => promisify(service.members.delete)({

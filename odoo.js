@@ -10,36 +10,38 @@ const odoo = new Odoo({
 
 const flatMap = (f, arr) => arr.reduce((x, y) => [...x, ...f(y)], []);
 
-function getOdooMembers(id, limit = 10) {
+function getOdooMembers(id, limit = 1000) {
   return new Promise((resolve, reject) => {
     odoo.connect(function (err) {
       if (err) {
         reject(err);
+        return;
       }
       console.log("Connected to Odoo server.");
-      var inParams = [];
-      inParams.push([
-        ["member_id.function_ids.organization_id", "child_of", id],
-        ["organization_id", "=", 859]
-      ]);
-      inParams.push([
-        "organization_id",
-        "member_number",
-        "name",
-        "member_id",
-        "email",
-        "relation_all_ids"
-      ]); //fields
-      inParams.push(0); //offset
-      inParams.push(limit); //limit
-      var params = [];
-      params.push(inParams);
-      odoo.execute_kw("member.profile", "search_read", params, function (
+      const params = [
+        [
+          ["member_id.function_ids.organization_id", "child_of", id],
+          ["organization_id", "=", 859]
+        ],
+        [
+          "organization_id",
+          "member_number",
+          "name",
+          "member_id",
+          "email",
+          "relation_all_ids"
+        ],
+        0,
+        limit
+      ];
+
+      odoo.execute_kw("member.profile", "search_read", [params], function (
         err,
         value
       ) {
         if (err) {
           reject(err);
+          return
         }
         value = value || [];
         const emails = value
@@ -56,6 +58,7 @@ function getOdooMembers(id, limit = 10) {
           function (err, value) {
             if (err) {
               reject(err);
+              return;
             }
             value = value || [];
             const idsToFetch = value
@@ -71,7 +74,6 @@ function getOdooMembers(id, limit = 10) {
                 reject(err);
               }
               value = value || [];
-              //console.log(value);
               const allEmails = [
                 ...emails,
                 ...value
