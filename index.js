@@ -2,17 +2,7 @@ require('dotenv').config();
 const difference = require('lodash/difference');
 const getOdooMembers = require('./odoo');
 const { addMembers, getMembers, deleteMembers } = require('./directory');
-
-const groupMap = [
-  [3654, 'sync-mini'],
-  [3652, 'sync-fam'],
-  [8808, 'sync-aser'],
-  [3657, 'sync-heidrun'],
-  [3658, 'sync-quark'],
-  [3656, 'sync-trop'],
-  [3655, 'sync-junior'],
-  [9073, 'sync-minivikar']
-];
+const groupMap = JSON.parse(process.env.GROUPMAP);
 
 async function main() {
   for (const [odooId, groupId] of groupMap) {
