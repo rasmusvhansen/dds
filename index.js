@@ -26,9 +26,17 @@ function syncGroup(odooIds, groupId) {
   return Promise.all([googleMembersPromise, odooMembersPromise])
     .then(([googleMembers, odooMembers]) => {
       const toCreate = uniq(difference(odooMembers, googleMembers));
+      log('ToCreate: ', toCreate);
       const toDelete = uniq(difference(googleMembers, odooMembers));
+      log('ToDelete: ', toDelete);
       const toCreatePromise = toCreate.length ? addMembers(groupId, toCreate) : Promise.resolve();
       return toCreatePromise.then(() => (toDelete.length ? deleteMembers(groupId, toDelete) : Promise.resolve));
     })
     .catch(r => console.log(r));
+}
+
+function log(label, names) {
+  if (names.length) {
+    console.log(label + ': ', names);
+  }
 }
