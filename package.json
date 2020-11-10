@@ -13,6 +13,8 @@
     "odoo-xmlrpc": "^1.0.8"
   },
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "logs": "heroku logs --tail",
+    "deploy": "git push heroku master"
   }
 }
