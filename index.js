@@ -30,7 +30,7 @@ function syncGroup(odooIds, groupId) {
       const toDelete = uniq(difference(googleMembers, odooMembers));
       log('ToDelete: ', toDelete);
       const toCreatePromise = toCreate.length ? addMembers(groupId, toCreate) : Promise.resolve();
-      return toCreatePromise.then(() => (toDelete.length ? deleteMembers(groupId, toDelete) : Promise.resolve));
+      return toCreatePromise.then(() => (toDelete.length ? deleteMembers(groupId, toDelete) : Promise.resolve()));
     })
     .catch(r => console.log(r));
 }

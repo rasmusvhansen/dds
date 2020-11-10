@@ -1,3 +1,7 @@
+// 'Barn af (11)' når det er barnet der er medlem og relations er forældre
+// 'Forældre til(10)' når det er forældre der er medlem og relations er barnet
+
+
 const Odoo = require('odoo-xmlrpc');
 const uniqBy = require('lodash/uniqBy');
 const odoo = new Odoo({
@@ -42,21 +46,24 @@ function getOdooMembers(id, limit = 1000) {
           reject(err);
           return;
         }
+        console.log('reading members of ' + id);
         value = value || [];
         const emails = value.filter(m => m.email).map(m => ({ name: m.name, email: m.email }));
 
         const relationIds = flatMap(m => m.relation_all_ids, value);
 
-        const relationParams = [[relationIds, ['other_partner_id', 'type_id']]];
+        const relationParams = [[relationIds, ['other_partner_id', 'type_selection_id', 'email', 'name']]];
         odoo.execute_kw('res.partner.relation.all', 'read', relationParams, function(err, value) {
           if (err) {
             reject(err);
             return;
           }
+          console.log('reading relations of ' + id);
           value = value || [];
-          const idsToFetch = value.filter(m => m.type_id[1] === 'Forældre til').map(m => m.other_partner_id[0]);
+          const idsToFetch = value.filter(m => m.type_selection_id[0] === 11).map(m => m.other_partner_id[0]);
+          
 
-          const parentParams = [[idsToFetch, ['email', 'name']]];
+          const parentParams = [[idsToFetch, ['email']]];
           odoo.execute_kw('res.partner', 'read', parentParams, function(err, value) {
             if (err) {
               reject(err);
