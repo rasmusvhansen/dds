@@ -13,20 +13,20 @@ const odoo = new Odoo({
 });
 
 const flatMap = (f, arr) => arr.reduce((x, y) => [...x, ...f(y)], []);
-async function getMembersForManyGroups(ids) {
+async function getMembersForManyGroups(ids, excludeParents) {
   if (ids instanceof Array) {
     let allMembers = [];
     for (const id of ids) {
       // cannot run in parallel, since the api does not support concurrent usage...
-      const members = await getOdooMembers(id);
+      const members = await getOdooMembers(id, excludeParents);
       allMembers = [...allMembers, ...members];
     }
     return allMembers;
   }
-  return getOdooMembers(ids);
+  return getOdooMembers(ids, excludeParents);
 }
 
-function getOdooMembers(id, limit = 1000) {
+function getOdooMembers(id, excludeParents, limit = 1000, ) {
   return new Promise((resolve, reject) => {
     odoo.connect(function(err) {
       if (err) {
@@ -46,9 +46,14 @@ function getOdooMembers(id, limit = 1000) {
           reject(err);
           return;
         }
-        console.log('reading members of ' + id);
+        console.log('reading members of ' + id, 'Excludeparents', excludeParents);
         value = value || [];
         const emails = value.filter(m => m.email).map(m => ({ name: m.name, email: m.email }));
+
+        if (excludeParents) {
+          resolve(emails);
+          return;
+        }
 
         const relationIds = flatMap(m => m.relation_all_ids, value);
 

@@ -6,9 +6,9 @@ const { addMembers, getMembers, deleteMembers } = require('./directory');
 const groupMap = JSON.parse(process.env.GROUPMAP);
 
 async function main() {
-  for (const [odooIds, groupId] of groupMap) {
+  for (const [odooIds, groupId, excludeParents] of groupMap) {
     // cannot run in parallel, since the api does not support concurrent usage...
-    await syncGroup(odooIds, groupId + '@valhallagruppe.dk');
+    await syncGroup(odooIds, groupId + '@valhallagruppe.dk', excludeParents);
   }
 }
 
@@ -16,11 +16,11 @@ main()
   .then(() => console.log('Synchronized successfully'))
   .catch(console.error);
 
-function syncGroup(odooIds, groupId) {
+function syncGroup(odooIds, groupId, excludeParents = false) {
   const googleMembersPromise = getMembers(groupId).then(r =>
     r.members ? r.members.map(u => u.email.toLowerCase()) : []
   );
-  const odooMembersPromise = getOdooMembersFromGroups(odooIds, 1000).then(users =>
+  const odooMembersPromise = getOdooMembersFromGroups(odooIds, excludeParents).then(users =>
     users.map(u => u.email.toLowerCase())
   );
   return Promise.all([googleMembersPromise, odooMembersPromise])
