@@ -13,7 +13,7 @@ async function main() {
 }
 
 main()
-  .then(() => console.log('Synchronized successfully'))
+  .then(() => console.log(new Date(), 'Synchronized successfully'))
   .catch(console.error);
 
 function syncGroup(odooIds, groupId, excludeParents = false) {

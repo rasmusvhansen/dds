@@ -33,7 +33,7 @@ function getOdooMembers(id, excludeParents, limit = 1000, ) {
         reject(err);
         return;
       }
-      console.log('Connected to Odoo server.');
+      console.log(new Date(), 'Connected to Odoo server.');
       const params = [
         [['member_id.function_ids.organization_id', 'child_of', id], ['organization_id', '=', 859]],
         ['organization_id', 'member_number', 'name', 'member_id', 'email', 'relation_all_ids'],
