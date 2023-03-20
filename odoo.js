@@ -1,4 +1,4 @@
-// 'Barn af (11)' når det er barnet der er medlem og relations er forældre
+// 'Barn af (9)' når det er barnet der er medlem og relations er forældre
 // 'Forældre til(10)' når det er forældre der er medlem og relations er barnet
 
 
@@ -65,7 +65,7 @@ function getOdooMembers(id, excludeParents, limit = 1000, ) {
           }
           console.log('reading relations of ' + id);
           value = value || [];
-          const idsToFetch = value.filter(m => m.type_selection_id[0] === 11).map(m => m.other_partner_id[0]);
+          const idsToFetch = value.filter(m => m.type_selection_id[0] === 9).map(m => m.other_partner_id[0]);
           
 
           const parentParams = [[idsToFetch, ['email']]];
