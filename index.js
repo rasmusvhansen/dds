@@ -18,16 +18,16 @@ main()
 
 function syncGroup(odooIds, groupId, excludeParents = false) {
   const googleMembersPromise = getMembers(groupId).then(r =>
-    r.members ? r.members.map(u => u.email.toLowerCase()) : []
+    r.members ? r.members.map(u => u.email.toLowerCase().trim()) : []
   );
   const odooMembersPromise = getOdooMembersFromGroups(odooIds, excludeParents).then(users =>
-    users.map(u => u.email.toLowerCase())
+    users.map(u => u.email.toLowerCase().trim())
   );
   return Promise.all([googleMembersPromise, odooMembersPromise])
     .then(([googleMembers, odooMembers]) => {
-      const toCreate = uniq(difference(odooMembers, googleMembers)).map(email => email.trim());
+      const toCreate = uniq(difference(odooMembers, googleMembers));
       log('ToCreate: ', toCreate);
-      const toDelete = uniq(difference(googleMembers, odooMembers)).map(email => email.trim());
+      const toDelete = uniq(difference(googleMembers, odooMembers));
       log('ToDelete: ', toDelete);
       const toCreatePromise = toCreate.length ? addMembers(groupId, toCreate) : Promise.resolve();
       return toCreatePromise.then(() => (toDelete.length ? deleteMembers(groupId, toDelete) : Promise.resolve()));
