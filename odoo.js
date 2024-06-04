@@ -26,7 +26,7 @@ async function getMembersForManyGroups(ids, excludeParents) {
   return getOdooMembers(ids, excludeParents);
 }
 
-function getOdooMembers(id, excludeParents, limit = 1000, ) {
+async function getOdooMembers(id, excludeParents, limit = 1000, ) {
   return new Promise((resolve, reject) => {
     odoo.connect(function(err) {
       if (err) {
@@ -36,12 +36,12 @@ function getOdooMembers(id, excludeParents, limit = 1000, ) {
       console.log(new Date(), 'Connected to Odoo server.');
       const params = [
         [['member_id.function_ids.organization_id', 'child_of', id], ['organization_id', '=', 859]],
-        ['organization_id', 'member_number', 'name', 'member_id', 'email', 'relation_all_ids'],
+        ['organization_id', 'member_number', 'name', 'member_id', 'email', 'relation_all_ids', 'active_function_ids', 'function_type_ids'],
         0,
         limit
       ];
 
-      odoo.execute_kw('member.profile', 'search_read', [params], function(err, value) {
+      odoo.execute_kw('member.profile', 'search_read', [params], async function(err, value) {
         if (err) {
           reject(err);
           return;
@@ -55,7 +55,19 @@ function getOdooMembers(id, excludeParents, limit = 1000, ) {
           return;
         }
 
-        const relationIds = flatMap(m => m.relation_all_ids, value);
+        const relationIds = [];
+        for (const member of value) {
+          if (member.active_function_ids.length > 1) {
+            const functionTypeIds = await getFunctionTypeIds(member.active_function_ids);
+            if (!functionTypeIds.some(f => f.organization_id[0] === id && f.function_type_id[0] !== 1)) {
+              // ikke leder af org
+              relationIds.push(...member.relation_all_ids);
+            }
+          } else {
+            relationIds.push(...member.relation_all_ids);
+          }
+        }
+        
 
         const relationParams = [[relationIds, ['other_partner_id', 'type_selection_id', 'email', 'name']]];
         odoo.execute_kw('res.partner.relation.all', 'read', relationParams, function(err, value) {
@@ -81,6 +93,25 @@ function getOdooMembers(id, excludeParents, limit = 1000, ) {
       });
     });
   });
+}
+
+async function getFunctionTypeIds(functionIds) {
+  return new Promise((resolve, reject) => {
+    const params = [
+      functionIds,
+      ['id', 'active', 'function_type_id', 'organization_id']
+      
+    ];
+  
+    odoo.execute_kw('member.function', 'read', [params], function(err, value) {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
+      resolve(value);
+    });
+  });  
 }
 
 module.exports = getMembersForManyGroups;
