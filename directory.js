@@ -27,6 +27,21 @@ function getMembers(groupId) {
       auth: jwtClient,
       groupKey: groupId
     });
+  }).catch(err => {
+    const statusCodes = err && [
+      err.status,
+      err.response && err.response.status,
+      err.code,
+      err.response &&
+        err.response.data &&
+        err.response.data.error &&
+        err.response.data.error.code
+    ];
+    if (statusCodes && statusCodes.some(status => Number(status) === 404)) {
+      console.warn('\x1b[31mGroup ' + groupId + ' is gone; skipping it\x1b[0m');
+      return null;
+    }
+    throw err;
   });
 }
 

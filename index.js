@@ -17,14 +17,20 @@ main()
   .catch(console.error);
 
 function syncGroup(odooIds, groupId, excludeParents = false) {
-  const googleMembersPromise = getMembers(groupId).then(r =>
-    r.members ? r.members.map(u => u.email.toLowerCase().trim()) : []
-  );
+  const googleMembersPromise = getMembers(groupId).then(r => {
+    if (!r) {
+      return null;
+    }
+    return r.members ? r.members.map(u => u.email.toLowerCase().trim()) : [];
+  });
   const odooMembersPromise = getOdooMembersFromGroups(odooIds, excludeParents).then(users =>
     users.map(u => u.email.toLowerCase().trim())
   );
   return Promise.all([googleMembersPromise, odooMembersPromise])
     .then(([googleMembers, odooMembers]) => {
+      if (googleMembers === null) {
+        return;
+      }
       const toCreate = uniq(difference(odooMembers, googleMembers));
       log('ToCreate: ', toCreate);
       const toDelete = uniq(difference(googleMembers, odooMembers));
