@@ -10,7 +10,7 @@ This document is the implementation contract. It records the repository context,
 
 ## 2. Repository Context
 
-The repository is a Node.js 22.18+ native-TypeScript ESM application. The canonical command is `npm start`, which runs `node index.ts`. The application synchronizes Google Group membership from Odoo data.
+The repository is a Node.js 16+ ESM application written in TypeScript. The canonical command is `npm start`, which builds the source to `dist/` and runs `node dist/index.js`. The application synchronizes Google Group membership from Odoo data.
 
 Relevant current files:
 
@@ -22,7 +22,7 @@ Relevant current files:
 - `src/runtime/logging.ts`: structured console logger with redaction of secret-like keys and values.
 - `src/ports/logger.ts`: typed logging interface.
 - `test/`: Node test suite covering configuration, synchronization behavior, Google response helpers, and Odoo filtering.
-- `package.json`: ESM package with `npm start`, `npm run typecheck`, and `npm test`.
+- `package.json`: ESM package with `npm start`, `npm run build`, `npm run typecheck`, and `npm test`.
 - `.env`: ignored local configuration currently includes legacy names `SENDMAIL_TO` and `SENDMAILER_API_KEY`; implementation must not read or print their values. The requested design renames these to explicit MailerSend names.
 
 Current synchronization outcomes include:
@@ -116,7 +116,7 @@ const emailParams = new EmailParams()
 await mailerSend.email.send(emailParams);
 ```
 
-The exact import names and method signatures must be verified against the installed package version during implementation. Do not use a runtime TypeScript loader beyond the existing native Node setup.
+The exact import names and method signatures must be verified against the installed package version during implementation. The application is compiled before runtime and does not use `tsx` or `ts-node`.
 
 ### Adapter boundary
 
@@ -382,7 +382,7 @@ The email adapter should be injectable so tests can assert “one send when issu
 - Add `mailersend` to `dependencies`, not devDependencies, because production runs use it.
 - Verify and pin a compatible version according to the project’s existing dependency policy.
 - Regenerate `package-lock.json`.
-- Keep `npm start`, `npm run typecheck`, and `npm test` behavior intact.
+- Keep `npm start`, `npm run build`, `npm run typecheck`, and `npm test` behavior intact.
 - Do not add a second runtime email library.
 
 ## 13. Tests

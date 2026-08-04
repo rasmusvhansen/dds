@@ -53,6 +53,7 @@ typings/
 
 # TypeScript tooling
 .tsbuildinfo
+dist/
 
 # Yarn Integrity file
 .yarn-integrity

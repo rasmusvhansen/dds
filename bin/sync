@@ -1,3 +1,5 @@
-#!/usr/bin/env node
+#!/bin/sh
+set -eu
 
-import '../index.ts';
+cd "$(dirname "$0")/.."
+exec npm start

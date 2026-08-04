@@ -8,7 +8,7 @@ Rewrite the `dds` repository from JavaScript to strongly typed TypeScript while 
 npm start
 ```
 
-`npm start` must execute the TypeScript entrypoint directly with Node using the repository's agreed Node 22.18+ baseline. On current Node 22.18+ releases, this is the literal `node index.ts` command; Node performs type stripping natively. The implementation must use Node-compatible, erasable TypeScript syntax so no runtime transpiler is required by the start command.
+`npm start` must compile the TypeScript source to Node 16-compatible ESM JavaScript and execute the emitted `dist/index.js` entrypoint. The implementation must use Node-compatible TypeScript syntax and explicit ESM import extensions in emitted output; no runtime TypeScript loader is required.
 
 This document is a design and implementation contract. It does not itself make implementation changes.
 
@@ -68,7 +68,7 @@ Current synchronization behavior includes:
 - Do not change the product purpose or replace Odoo/Google Groups with different services as part of the baseline rewrite.
 - Do not introduce parallel processing of group mappings; sequential processing is an explicit compatibility requirement.
 - Do not silently change parent inclusion, leader exclusion, email normalization, or add-before-delete behavior.
-- Do not require a bundled production artifact for `npm start`; the selected runtime contract is direct Node execution of TypeScript.
+- Keep the generated production artifact out of version control; `npm start` creates it in `dist/` before launching Node 16.
 - Do not expose a public library API beyond what is needed by the executable and supported `bin/sync` wrapper.
 - Do not add unrelated UI, web-server, database, or infrastructure work.
 
@@ -76,10 +76,10 @@ Current synchronization behavior includes:
 
 ### 5.1 Node runtime
 
-- Official minimum runtime: Node.js 22.18+.
+- Official minimum runtime: Node.js 16.0.0.
 - Document the minimum in `README.md` and package metadata where appropriate (`engines.node`).
-- `npm start` must use Node's direct TypeScript execution path and must not invoke `tsx`, `ts-node`, a bundler, or a generated JavaScript entrypoint.
-- Verify the exact native TypeScript support and required Node flags for the selected minimum before implementation. If the target Node patch line requires a flag, encode that explicitly in `npm start` and document it; do not rely on an undocumented local setup.
+- `npm start` must build with `tsc` and launch the generated JavaScript entrypoint with Node 16; it must not require `tsx` or `ts-node`.
+- Verify the exact TypeScript build configuration, emitted ESM import extensions, and Node 16 runtime behavior before implementation. If the target runtime requires a flag, encode that explicitly in `npm start` and document it; do not rely on an undocumented local setup.
 
 ### 5.2 TypeScript syntax
 
@@ -107,7 +107,7 @@ Add a TypeScript configuration and a required typecheck script:
 npm run typecheck
 ```
 
-The typecheck script must run `tsc --noEmit` with strict settings. A separate emitted build script may be added for tooling or verification, but it must not replace the direct-TypeScript `npm start` contract.
+The typecheck script must run `tsc --noEmit` with strict settings. The production build is emitted to `dist/` and is the runtime input for `npm start`; `npm run typecheck` remains a separate no-emit validation command.
 
 ## 6. Proposed Source Organization
 
@@ -263,11 +263,11 @@ Any change to these business rules must be separately approved; the TypeScript r
 
 ## 11. Dependency and API Modernization
 
-- Review current dependency versions and compatibility with Node 22 ESM and TypeScript.
+- Review current dependency versions and compatibility with Node 16 ESM and TypeScript.
 - Modernize stale dependencies where safe, especially when required for supported ESM behavior, security, or maintained type declarations.
 - Keep Odoo and Google behavior stable. Replacing a client library or API wrapper is permitted only when the adapter preserves behavior and has tests around the contract.
 - Add TypeScript and type declaration dependencies only as needed by the selected direct-Node runtime and `typecheck` workflow.
-- Do not add a runtime TypeScript loader if `npm start` is required to use native `node index.ts`.
+- Do not add a runtime TypeScript loader; compile to JavaScript before `npm start` launches the application.
 - Keep dependency changes scoped to the migration and record notable upgrades in the README/spec implementation notes.
 
 ## 12. Tests
@@ -294,7 +294,7 @@ Add automated tests, prioritizing tests that do not require live credentials or 
 - Odoo callback/error conversion into typed promises.
 - Per-member failure aggregation according to the final chosen policy.
 
-Use fakes/mocks through the typed ports so tests do not require live Google or Odoo credentials. If a test framework is introduced, choose one compatible with Node 22 native TypeScript execution or define the necessary test execution strategy explicitly; test tooling must not alter the production `npm start` contract.
+Use fakes/mocks through the typed ports so tests do not require live Google or Odoo credentials. If a test framework is introduced, choose one compatible with the Node 16 emitted-JavaScript test workflow or define the necessary test execution strategy explicitly; test tooling must not alter the production `npm start` contract.
 
 ## 13. Package Scripts and Entrypoints
 
@@ -304,10 +304,11 @@ The final package metadata must provide at least:
 {
   "type": "module",
   "engines": {
-    "node": ">=22.18.0"
+    "node": ">=16.0.0"
   },
   "scripts": {
-    "start": "node index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "npm run build && node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "..."
   }
@@ -319,7 +320,7 @@ The exact `test` command and any optional `build`/`lint` command should match th
 Additional requirements:
 
 - Update `main` or remove it if it is misleading for an executable-only package; do not leave it pointing to a deleted `index.js`.
-- Keep `npm start` literal and documented.
+- Keep `npm start` as the documented build-and-run command.
 - Keep `bin/sync` executable and delegating to the canonical TypeScript entrypoint without duplicating synchronization logic.
 - Update `run.sh` only as needed to remain compatible with the new entrypoint and preserve its deployment context.
 - Update `.gitignore` for any new caches, coverage output, or generated artifacts while retaining `.env`/secret protection.
@@ -330,7 +331,7 @@ Additional requirements:
 Expand `README.md` to cover:
 
 - Project purpose.
-- Supported Node.js version and why native TypeScript execution is required.
+- Supported Node.js version and the TypeScript-to-ESM build workflow.
 - Installation (`npm install`).
 - `npm start` usage.
 - `npm run typecheck` and test commands.
@@ -344,7 +345,7 @@ Expand `README.md` to cover:
 
 ## 15. Migration Plan
 
-1. Inventory current runtime behavior and verify dependency/API compatibility with Node 22 ESM/native TypeScript.
+1. Inventory current runtime behavior and verify dependency/API compatibility with Node 16 ESM and emitted TypeScript JavaScript.
 2. Add package/module/runtime metadata and TypeScript configuration without changing synchronization decisions.
 3. Introduce typed domain models, configuration validation, error types, and normalization helpers.
 4. Define Google and Odoo ports.
@@ -353,7 +354,7 @@ Expand `README.md` to cover:
 7. Migrate `bin/sync` and operational scripts/documentation.
 8. Add unit and adapter-seam tests using fakes.
 9. Run typecheck, tests, and a non-network startup/configuration validation path.
-10. Verify `npm start` under the documented Node 22.18+ runtime and confirm no JavaScript entrypoint remains referenced accidentally.
+10. Verify `npm start` under Node 16 and confirm emitted JavaScript imports resolve correctly.
 11. Review the final diff for behavior changes, secret leakage, untyped boundaries, and stale paths.
 
 ## 16. Acceptance Criteria
@@ -362,7 +363,7 @@ The rewrite is complete when all of the following are true:
 
 - [ ] Application implementation has been migrated from `.js` to `.ts`.
 - [ ] The package uses ESM consistently, with intentional handling of any CommonJS dependencies.
-- [ ] `npm start` executes `node index.ts` (or the exact documented Node-native equivalent required by the selected Node 22.18+ patch line) without `tsx`/`ts-node`.
+- [ ] `npm start` builds the TypeScript source and executes `node dist/index.js` under Node 16 without `tsx`/`ts-node`.
 - [ ] `npm run typecheck` passes with strict and maximum practical compiler checks enabled.
 - [ ] No application code relies on implicit `any` or unchecked raw environment/API data.
 - [ ] Invalid configuration and malformed `GROUPMAP` fail fast before network calls.
@@ -381,11 +382,11 @@ The rewrite is complete when all of the following are true:
 
 ## 17. Decisions Captured from Interview
 
-- Start strategy: direct native Node execution of TypeScript using the literal `node index.ts` command.
+- Start strategy: compile with `tsc` and execute the emitted `dist/index.js` through `npm start`.
 - Module format: ESM.
 - Type strictness: maximum strictness.
 - Rewrite scope: modernized redesign, while retaining synchronization semantics.
-- Runtime baseline: Node 22 LTS, with Node 22.18+ selected for native TypeScript support.
+- Runtime baseline: Node 16+, using a TypeScript build to Node-compatible ESM JavaScript.
 - Entrypoint layout: source layout is flexible; the start command must remain direct and documented.
 - Validation: a required typecheck command, with build/typecheck separation if useful.
 - Configuration: centralized typed config with fail-fast validation.
@@ -403,7 +404,7 @@ The rewrite is complete when all of the following are true:
 
 These are implementation verification points rather than unresolved product requirements:
 
-1. Confirm the exact Node 22.18+ native TypeScript behavior, supported syntax, ESM resolution rules, and whether any flag is required for the chosen entrypoint layout.
+1. Confirm Node 16 ESM behavior, emitted import extensions, and the production TypeScript build configuration.
 2. Confirm each current Google/Odoo dependency's ESM and TypeScript declaration status before selecting interop or upgrade paths.
 3. Confirm the exact stable external `GROUPMAP` format from deployment configuration before deciding whether to preserve tuple input or introduce a backwards-compatible named-object format.
 4. Confirm the desired per-member insert/delete failure aggregation behavior when implementing the adapter contract; the default is to continue operations, mark the group failed, and continue later groups.

@@ -4,11 +4,11 @@ Valhalla-gruppe mailing-list maintainer. The application synchronizes Google Gro
 
 ## Requirements
 
-- Node.js 22.18 or newer.
+- Node.js 16 or newer.
 - Access to the configured Odoo XML-RPC endpoint.
 - A Google service account with domain-wide delegation and the required Admin Directory scopes.
 
-The application is intentionally run with Node's native TypeScript type stripping. It uses erasable TypeScript syntax and does not require `tsx` or `ts-node` at runtime. Native execution strips types but does not typecheck, so run the typecheck command before deployment.
+The application is written in TypeScript and compiled to Node 16-compatible ESM JavaScript before it starts. `npm start` runs the production build and then launches `dist/index.js`. Run the typecheck command before deployment.
 
 ## Install and run
 
@@ -19,7 +19,7 @@ npm test
 npm start
 ```
 
-`npm start` executes `node index.ts`. The repository also preserves the executable wrapper:
+`npm start` compiles the application and executes `node dist/index.js`. The repository also preserves the executable wrapper:
 
 ```sh
 ./bin/sync
@@ -85,7 +85,7 @@ npm run typecheck
 npm test
 ```
 
-The test suite covers configuration validation, email normalization, synchronization planning, ordering, missing-group handling, continuation after group failures, issue-summary formatting, and notification orchestration.
+The test suite covers configuration validation, email normalization, synchronization planning, ordering, missing-group handling, continuation after group failures, issue-summary formatting, and notification orchestration. Tests compile to `dist/` and execute under the supported Node 16 runtime.
 
 ## Operations
 
