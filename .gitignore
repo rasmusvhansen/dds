@@ -51,6 +51,9 @@ typings/
 # Output of 'npm pack'
 *.tgz
 
+# TypeScript tooling
+.tsbuildinfo
+
 # Yarn Integrity file
 .yarn-integrity
 
