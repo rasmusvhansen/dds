@@ -1,19 +1,28 @@
 {
   "name": "dds",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Valhalla-gruppe Google Group membership synchronizer",
+  "type": "module",
+  "main": "index.ts",
   "repository": "https://github.com/rasmusvhansen/dds",
   "author": "<rasmusvhansen@gmail.com>",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.18.0"
+  },
   "dependencies": {
-    "dotenv": "^5.0.1",
-    "google-auth-library": "^0.12.0",
-    "googleapis": "^26.0.1",
-    "lodash": "^4.17.5",
+    "dotenv": "^17.4.2",
+    "googleapis": "^174.0.0",
     "odoo-xmlrpc": "^1.0.8"
   },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
+  },
   "scripts": {
-    "start": "node index.js",
+    "start": "node index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.ts",
     "logs": "heroku logs --tail",
     "deploy": "git push heroku master"
   }
