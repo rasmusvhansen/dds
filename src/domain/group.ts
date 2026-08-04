@@ -1,4 +1,5 @@
 import type { NormalizedEmail } from './member.ts';
+import type { RunIssue } from '../email/issue-summary.ts';
 
 export type OdooGroupId = number;
 export type OdooGroupIds = OdooGroupId | readonly OdooGroupId[];
@@ -29,9 +30,11 @@ export type GroupOutcome =
   | {
       readonly kind: 'failed';
       readonly groupId: string;
-      readonly error: unknown;
+      readonly error: string;
     };
 
 export interface RunSummary {
   readonly outcomes: readonly GroupOutcome[];
+  readonly issues: readonly RunIssue[];
+  readonly mappingsAttempted: number;
 }

@@ -41,6 +41,15 @@ Required variables:
 - `ODOOUSER`: Odoo username.
 - `ODOOPASSWORD`: Odoo password.
 - `GROUPMAP`: JSON array of legacy tuples: `[[odooIds, groupId, excludeParents], ...]`.
+- `MAILERSEND_API_KEY`: MailerSend API token.
+- `MAILERSEND_FROM_EMAIL`: verified MailerSend sender address.
+- `MAILERSEND_TO_EMAILS`: comma-separated notification recipients.
+
+Optional:
+
+- `MAILERSEND_FROM_NAME`: sender display name.
+
+The old `SENDMAIL_TO` and `SENDMAILER_API_KEY` names are no longer accepted. Configure the explicit `MAILERSEND_*` names instead.
 
 `odooIds` is a non-negative integer or a non-empty array of non-negative integers. `groupId` is a non-empty string. `excludeParents` is optional and defaults to `false`. The complete mapping is rejected before any network request if any entry is invalid.
 
@@ -52,6 +61,8 @@ Optional variables:
 - `ODOOPARENTRELATIONTYPEID` (default: `9`, the parent relation type).
 - `ODOOLEADERFUNCTIONTYPEID` (default: `1`, the leader function type).
 
+MailerSend requires a verified sender address. The application validates the API key, sender, and comma-separated recipients at startup before any synchronization calls.
+
 ## Synchronization behavior
 
 - Mappings are processed sequentially because the external APIs do not support concurrent use safely.
@@ -61,6 +72,9 @@ Optional variables:
 - Parent members are omitted when `excludeParents` is true. Otherwise the existing relation type and leader exclusion rules are applied.
 - An individual group failure does not prevent later mappings from running. The process reports the failure and exits non-zero after all mappings have been attempted.
 - Startup configuration errors fail fast before API calls.
+- A run with skipped or failed groups sends one plain-text MailerSend summary after all mappings have been attempted. Healthy runs send no email.
+- The summary includes warning/error counts, affected groups, failed operations, and normalized failed member emails, but never credentials or raw API payloads.
+- If summary email delivery fails, the failure is logged and the original synchronization exit status is preserved.
 
 ## Development
 
@@ -71,7 +85,7 @@ npm run typecheck
 npm test
 ```
 
-The test suite covers configuration validation, email normalization, synchronization planning, ordering, missing-group handling, and continuation after group failures.
+The test suite covers configuration validation, email normalization, synchronization planning, ordering, missing-group handling, continuation after group failures, issue-summary formatting, and notification orchestration.
 
 ## Operations
 

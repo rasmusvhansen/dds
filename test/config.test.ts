@@ -11,7 +11,11 @@ function environment(groupMap: string): NodeJS.ProcessEnv {
     ODOODB: 'database',
     ODOOUSER: 'user',
     ODOOPASSWORD: 'password',
-    GROUPMAP: groupMap
+    GROUPMAP: groupMap,
+    MAILERSEND_API_KEY: 'test-api-key',
+    MAILERSEND_FROM_EMAIL: 'sender@example.com',
+    MAILERSEND_FROM_NAME: 'DDS',
+    MAILERSEND_TO_EMAILS: 'ops@example.com, admin@example.com, ops@example.com'
   };
 }
 
@@ -20,6 +24,8 @@ test('parses and defaults a valid legacy GROUPMAP', () => {
   assert.deepEqual(config.groupMap, [{ odooIds: [1, 2], groupId: 'group', excludeParents: true }]);
   assert.equal(config.google.groupDomain, 'valhallagruppe.dk');
   assert.equal(config.odoo.organizationId, 859);
+  assert.deepEqual(config.email.toEmails, ['ops@example.com', 'admin@example.com']);
+  assert.equal(config.email.fromName, 'DDS');
 });
 
 test('rejects malformed GROUPMAP entries as a whole configuration', () => {
@@ -27,6 +33,28 @@ test('rejects malformed GROUPMAP entries as a whole configuration', () => {
     () => loadConfig(environment('[[1, "valid"], ["not-an-id", "invalid"]]')),
     /GROUPMAP entry 1 odooIds/
   );
+});
+
+test('rejects malformed MailerSend recipients', () => {
+  const env = environment('[[1, "group"]]');
+  env.MAILERSEND_TO_EMAILS = 'ops@example.com,,admin@example.com';
+  assert.throws(() => loadConfig(env), /must not contain blank recipients/);
+});
+
+test('rejects malformed sender and missing recipients', () => {
+  const senderEnv = environment('[[1, "group"]]');
+  senderEnv.MAILERSEND_FROM_EMAIL = 'not-an-email';
+  assert.throws(() => loadConfig(senderEnv), /MAILERSEND_FROM_EMAIL/);
+
+  const recipientEnv = environment('[[1, "group"]]');
+  delete recipientEnv.MAILERSEND_TO_EMAILS;
+  assert.throws(() => loadConfig(recipientEnv), /MAILERSEND_TO_EMAILS/);
+});
+
+test('rejects missing MailerSend configuration before synchronization', () => {
+  const env = environment('[[1, "group"]]');
+  delete env.MAILERSEND_API_KEY;
+  assert.throws(() => loadConfig(env), /MAILERSEND_API_KEY/);
 });
 
 test('rejects malformed private keys before any API client is constructed', () => {
