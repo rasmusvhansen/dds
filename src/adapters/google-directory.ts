@@ -6,6 +6,7 @@ import { errorStatusCodes } from '../runtime/errors.ts';
 import type { DirectoryClient } from '../ports/directory-client.ts';
 import { GroupNotFoundError as MissingGroupError } from '../ports/directory-client.ts';
 import type { Logger } from '../ports/logger.ts';
+import type { MemberOperationFailure } from '../ports/member-operation-failure.ts';
 
 const require = createRequire(import.meta.url);
 const googleModule = require('googleapis') as GoogleModule;
@@ -61,15 +62,17 @@ interface GoogleMemberListPayload {
   readonly members?: unknown;
 }
 
-class MemberOperationError extends Error {
-  public readonly failures: readonly { readonly email: NormalizedEmail; readonly error: unknown }[];
+export class MemberOperationError extends Error {
+  public readonly operation: 'add' | 'delete';
+  public readonly failures: readonly MemberOperationFailure[];
 
   public constructor(
     operation: 'add' | 'delete',
-    failures: readonly { readonly email: NormalizedEmail; readonly error: unknown }[]
+    failures: readonly MemberOperationFailure[]
   ) {
     super(`${operation} operation failed for ${failures.length} member(s)`);
     this.name = 'MemberOperationError';
+    this.operation = operation;
     this.failures = failures;
   }
 }
@@ -140,7 +143,7 @@ export class GoogleDirectoryClient implements DirectoryClient {
     request: (service: GoogleDirectoryService, email: NormalizedEmail) => Promise<unknown>
   ): Promise<readonly NormalizedEmail[]> {
     const completed: NormalizedEmail[] = [];
-    const failures: { readonly email: NormalizedEmail; readonly error: unknown }[] = [];
+    const failures: MemberOperationFailure[] = [];
 
     for (const [index, email] of emails.entries()) {
       await delay(index * 100);

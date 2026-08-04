@@ -5,7 +5,15 @@ const require = createRequire(import.meta.url);
 const dotenv = require('dotenv') as { readonly config: () => void };
 dotenv.config();
 
+export interface EmailConfig {
+  readonly apiKey: string;
+  readonly fromEmail: string;
+  readonly fromName?: string;
+  readonly toEmails: readonly string[];
+}
+
 export interface AppConfig {
+  readonly email: EmailConfig;
   readonly google: {
     readonly clientEmail: string;
     readonly privateKey: string;
@@ -37,6 +45,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   }
 
   return {
+    email: parseEmailConfig(env),
     google: {
       clientEmail: required(env, 'CLIENTEMAIL'),
       privateKey: privateKey(env),
@@ -102,6 +111,29 @@ function parseOdooIds(value: unknown, index: number): OdooGroupId | readonly Odo
 
 function isValidOdooId(value: unknown): value is OdooGroupId {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
+
+function parseEmailConfig(env: NodeJS.ProcessEnv): EmailConfig {
+  const apiKey = required(env, 'MAILERSEND_API_KEY');
+  const fromEmail = emailAddress(required(env, 'MAILERSEND_FROM_EMAIL'), 'MAILERSEND_FROM_EMAIL');
+  const rawRecipients = required(env, 'MAILERSEND_TO_EMAILS').split(',');
+  if (rawRecipients.some((recipient) => recipient.trim() === '')) {
+    throw new Error('MAILERSEND_TO_EMAILS must not contain blank recipients');
+  }
+  const toEmails = [...new Set(rawRecipients.map((recipient) => emailAddress(recipient, 'MAILERSEND_TO_EMAILS')))] as string[];
+  if (toEmails.length === 0) {
+    throw new Error('MAILERSEND_TO_EMAILS must contain at least one recipient');
+  }
+  const fromName = optional(env, 'MAILERSEND_FROM_NAME');
+  return fromName === undefined ? { apiKey, fromEmail, toEmails } : { apiKey, fromEmail, fromName, toEmails };
+}
+
+function emailAddress(value: string, variable: string): string {
+  const normalized = value.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+    throw new Error(`${variable} must contain valid email addresses`);
+  }
+  return normalized;
 }
 
 function privateKey(env: NodeJS.ProcessEnv): string {
