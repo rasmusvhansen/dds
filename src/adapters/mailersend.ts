@@ -28,13 +28,30 @@ export class MailerSendIssueEmailClient implements IssueEmailClient {
     const sender = this.config.fromName
       ? new Sender(this.config.fromEmail, this.config.fromName)
       : new Sender(this.config.fromEmail);
-    const recipients = this.config.toEmails.map((email) => new Recipient(email));
-    const params = new EmailParams()
-      .setFrom(sender)
-      .setTo(recipients)
-      .setSubject(formatIssueSubject(summary))
-      .setText(formatIssueBody(summary));
+    const subject = formatIssueSubject(summary);
+    const body = formatIssueBody(summary);
 
-    await this.mailerSend.email.send(params);
+    let sendFailed = false;
+    let firstError: unknown;
+    for (const email of this.config.toEmails) {
+      const params = new EmailParams()
+        .setFrom(sender)
+        .setTo([new Recipient(email)])
+        .setSubject(subject)
+        .setText(body);
+
+      try {
+        await this.mailerSend.email.send(params);
+      } catch (error) {
+        if (!sendFailed) {
+          sendFailed = true;
+          firstError = error;
+        }
+      }
+    }
+
+    if (sendFailed) {
+      throw firstError;
+    }
   }
 }
